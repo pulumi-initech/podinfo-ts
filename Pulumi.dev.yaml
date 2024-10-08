@@ -1,2 +1,2 @@
 environment:
-  - demo/eks-shared-dev
+  - aws-eks-typescript-simple/dev-outputs
