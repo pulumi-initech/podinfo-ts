@@ -1,90 +1,103 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as k8s from "@pulumi/kubernetes";
+import { getResource } from "./helpers";
 
 interface Metadata {
-    name: string;
+  name: string;
 }
 interface ClusterSecretStore {
-    kind: string;
-    metadata: Metadata;
+  kind: string;
+  metadata: Metadata;
 }
 
 const config = new pulumi.Config();
 
 const provider = new k8s.Provider("k8s", {
-    kubeconfig: config.get("kubeConfig")
-})
+  kubeconfig: config.get("kubeConfig"),
+});
 
-const clusterSecretStore = config.getObject<ClusterSecretStore>("clusterSecretStoreRef")!;
+const clusterSecretStore = config.getObject<ClusterSecretStore>(
+  "clusterSecretStoreRef"
+)!;
 
-// cut for brevity
-const podInfo = new k8s.helm.v3.Release("podinfo", {
-    chart: "podinfo",
-    version: "6.7.0",
-    namespace: "podinfo",
-    createNamespace: true,
-    repositoryOpts: {
-        repo: "https://stefanprodan.github.io/podinfo",
-    },
-    values: {
-        extraEnvs: [
-            {
-                name: "FROM_ESC_VIA_ESO",
-                valueFrom: {
-                    secretKeyRef: {
-                        name: "esc-secret-store",
-                        key: "secret-1",
-                    }
-                }
-            },
-            {
-                name: "FROM_ESC_VIA_ESO_2",
-                valueFrom: {
-                    secretKeyRef: {
-                        name: "esc-secret-store",
-                        key: "secret-2",
-                    }
-                }
-            }
-        ]
-    },
-}, { provider });
+const ns = new k8s.core.v1.Namespace("podinfo-ns", {
+  metadata: {
+    name: "podinfo",
+  },
+});
 
-const externalSecretPodInfo = new k8s.apiextensions.CustomResource("external-secret-podinfo", {
+const externalSecret = new k8s.apiextensions.CustomResource(
+  "external-secret-podinfo",
+  {
     apiVersion: "external-secrets.io/v1beta1",
     kind: "ExternalSecret",
     metadata: {
-        name: "esc-secret-store",
-        namespace: podInfo.namespace,
+      name: "esc-secret-store",
+      namespace: ns.metadata.name,
     },
     spec: {
-        dataFrom: [
-            {
-                extract: {
-                    conversionStrategy: "Default",
-                    key: "secrets",
-                }
-            }
-        ],
-        refreshInterval: "10s",
-        secretStoreRef: {
-            kind: clusterSecretStore.kind,
-            name: clusterSecretStore.metadata.name,
-        }
+      dataFrom: [
+        {
+          extract: {
+            conversionStrategy: "Default",
+            key: "secrets",
+          },
+        },
+      ],
+      refreshInterval: "10s",
+      secretStoreRef: {
+        kind: clusterSecretStore.kind,
+        name: clusterSecretStore.metadata.name,
+      },
     },
-}, { provider });
+  },
+  { provider }
+);
 
-const appLabels = { app: "nginx" };
+const podInfo = new k8s.helm.v4.Chart(
+  "podinfo",
+  {
+    chart: "podinfo",
+    version: "6.7.0",
+    namespace: ns.metadata.name,
+    repositoryOpts: {
+      repo: "https://stefanprodan.github.io/podinfo",
+    },
+    values: {
+      service: {
+        type: "LoadBalancer"
+      },
+      extraEnvs: [
+        {
+          name: "FROM_ESC_VIA_ESO",
+          valueFrom: {
+            secretKeyRef: {
+              name: "esc-secret-store",
+              key: "secret-1",
+            },
+          },
+        },
+        {
+          name: "FROM_ESC_VIA_ESO_2",
+          valueFrom: {
+            secretKeyRef: {
+              name: "esc-secret-store",
+              key: "secret-2",
+            },
+          },
+        },
+      ],
+    },
+  },
+  { provider }
+);
 
-const deployment = new k8s.apps.v1.Deployment("nginx", {
-    spec: {
-        selector: { matchLabels: appLabels },
-        replicas: 1,
-        template: {
-            metadata: { labels: appLabels },
-            spec: { containers: [{ name: "nginx", image: "nginx" }] }
-        }
-    }
-});
 
-export const name = deployment.metadata.name;
+const svc = getResource(
+  podInfo.resources,
+  "v1/Service",
+  "podinfo",
+  "podinfo"
+) as k8s.core.v1.Service;
+
+export const url = pulumi.interpolate`http://${svc.status.loadBalancer.ingress[0].hostname}:9898`;
