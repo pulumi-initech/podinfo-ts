@@ -13,7 +13,7 @@ interface ClusterSecretStore {
 const config = new pulumi.Config();
 
 const provider = new k8s.Provider("k8s", {
-  kubeconfig: config.get("kubeconfig"),
+  kubeconfig: config.get("kubeConfig"),
 });
 
 const clusterSecretStore = config.getObject<ClusterSecretStore>(
