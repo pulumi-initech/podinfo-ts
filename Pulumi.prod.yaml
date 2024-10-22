@@ -1,0 +1,2 @@
+environment:
+  - aws-eks-typescript-simple/prod-outputs
