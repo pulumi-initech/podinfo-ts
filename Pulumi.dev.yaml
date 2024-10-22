@@ -1,2 +1,3 @@
 environment:
   - aws-eks-typescript-simple/dev-outputs
+  - shared/aws-dev
