@@ -1,6 +1,9 @@
 {
     "name": "podinfo-ts",
     "main": "index.ts",
+    "scripts": {
+        "preinstall": "sed -e \"s/\\${GITHUB_TOKEN}/$GITHUB_TOKEN/\" .npmrc.envsubst > .npmrc"
+    },
     "devDependencies": {
         "@types/node": "^18",
         "typescript": "^5.0.0"

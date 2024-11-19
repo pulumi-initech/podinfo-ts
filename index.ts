@@ -13,7 +13,7 @@ interface ClusterSecretStore {
 const config = new pulumi.Config();
 
 const provider = new k8s.Provider("k8s", {
-  kubeconfig: config.get("kubeConfig"),
+  kubeconfig: config.get("kubeconfig"),
 });
 
 const clusterSecretStore = config.getObject<ClusterSecretStore>(
@@ -24,7 +24,7 @@ const ns = new k8s.core.v1.Namespace("podinfo-ns", {
   metadata: {
     name: "podinfo",
   },
-});
+}, { provider });
 
 const externalSecret = new k8s.apiextensions.CustomResource(
   "external-secret-podinfo",
