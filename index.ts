@@ -65,7 +65,7 @@ const podInfo = new k8s.helm.v4.Chart(
     },
     values: {
       service: {
-        type: "LoadBalancer"
+        type: "LoadBalancer",
       },
       extraEnvs: [
         {
