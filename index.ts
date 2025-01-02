@@ -23,7 +23,7 @@ const clusterSecretStore = config.getObject<ClusterSecretStore>(
 
 const ns = new k8s.core.v1.Namespace("podinfo-ns", {
   metadata: {
-    name: "podinfo",
+    name: `podinfo-${pulumi.runtime.getStack()}`,
     annotations: {
       "pulumi.com/patchForce": "true",
     },
