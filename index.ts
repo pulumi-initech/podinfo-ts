@@ -14,6 +14,7 @@ const config = new pulumi.Config();
 
 const provider = new k8s.Provider("k8s", {
   kubeconfig: config.get("kubeconfig"),
+  enableServerSideApply: true
 });
 
 const clusterSecretStore = config.getObject<ClusterSecretStore>(
@@ -23,6 +24,9 @@ const clusterSecretStore = config.getObject<ClusterSecretStore>(
 const ns = new k8s.core.v1.Namespace("podinfo-ns", {
   metadata: {
     name: "podinfo",
+    annotations: {
+      "pulumi.com/patchForce": "true",
+    },
   },
 }, { provider });
 
