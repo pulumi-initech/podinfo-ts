@@ -62,7 +62,7 @@ const podInfo = new k8s.helm.v4.Chart(
   "podinfo",
   {
     chart: "podinfo",
-    version: "6.7.0",
+    version: "6.9.2",
     namespace: ns.metadata.name,
     repositoryOpts: {
       repo: "https://stefanprodan.github.io/podinfo",
