@@ -14,8 +14,21 @@ const config = new pulumi.Config();
 
 const provider = new k8s.Provider("k8s", {
   kubeconfig: config.get("kubeconfig"),
-  enableServerSideApply: true
+  enableServerSideApply: true,
+
 });
+
+// pulumi.runtime.registerResourceTransform(args => {
+//   if (args.opts.provider?.id === provider.id) {
+//     if(args.props["metadata"] !== undefined) {
+//       let labels = args.props["metadata"]["labels"] || {};
+//       labels["argocd.argoproj.io/instance"] = config.get("")
+//       args.props["metadata"]["labels"] = labels;
+//       return { props: args.props, opts: args.opts };
+//     }
+//   }
+//   return undefined;
+// });
 
 const clusterSecretStore = config.getObject<ClusterSecretStore>(
   "clusterSecretStoreRef"
