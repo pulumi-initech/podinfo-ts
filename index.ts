@@ -17,17 +17,6 @@ const provider = new k8s.Provider("k8s", {
   enableServerSideApply: true,
 });
 
-// pulumi.runtime.registerResourceTransform(args => {
-//   if (args.opts.provider?.id === provider.id) {
-//     if(args.props["metadata"] !== undefined) {
-//       let labels = args.props["metadata"]["labels"] || {};
-//       labels["argocd.argoproj.io/instance"] = config.get("")
-//       args.props["metadata"]["labels"] = labels;
-//       return { props: args.props, opts: args.opts };
-//     }
-//   }
-//   return undefined;
-// });
 
 const clusterSecretStore = config.getObject<ClusterSecretStore>(
   "clusterSecretStoreRef"
@@ -42,33 +31,33 @@ const ns = new k8s.core.v1.Namespace("podinfo-ns", {
   },
 }, { provider });
 
-// const externalSecret = new k8s.apiextensions.CustomResource(
-//   "external-secret-podinfo",
-//   {
-//     apiVersion: "external-secrets.io/v1beta1",
-//     kind: "ExternalSecret",
-//     metadata: {
-//       name: "esc-secret-store",
-//       namespace: ns.metadata.name,
-//     },
-//     spec: {
-//       dataFrom: [
-//         {
-//           extract: {
-//             conversionStrategy: "Default",
-//             key: "secrets",
-//           },
-//         },
-//       ],
-//       refreshInterval: "10s",
-//       secretStoreRef: {
-//         kind: clusterSecretStore.kind,
-//         name: clusterSecretStore.metadata.name,
-//       },
-//     },
-//   },
-//   { provider }
-// );
+const externalSecret = new k8s.apiextensions.CustomResource(
+  "external-secret-podinfo",
+  {
+    apiVersion: "external-secrets.io/v1beta1",
+    kind: "ExternalSecret",
+    metadata: {
+      name: "esc-secret-store",
+      namespace: ns.metadata.name,
+    },
+    spec: {
+      dataFrom: [
+        {
+          extract: {
+            conversionStrategy: "Default",
+            key: "secrets",
+          },
+        },
+      ],
+      refreshInterval: "10s",
+      secretStoreRef: {
+        kind: 'ClusterSecretStore',
+        name: 'secret-store',
+      },
+    },
+  },
+  { provider }
+);
 
 const podInfo = new k8s.helm.v4.Chart(
   "podinfo",
